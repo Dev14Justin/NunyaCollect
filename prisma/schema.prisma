@@ -1,0 +1,296 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUM TYPES
+// ─────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  SUPERVISEUR
+  COLLECTRICE
+}
+
+enum StatutTransaction {
+  EN_ATTENTE
+  CONFIRMEE
+  ANNULEE
+  SUSPECTE
+}
+
+enum TypeTransaction {
+  DEPOT
+  RETRAIT
+  REMBOURSEMENT
+}
+
+enum NiveauAlerte {
+  INFO
+  AVERTISSEMENT
+  CRITIQUE
+}
+
+enum TypeAlerte {
+  ZONE_INHABITUELLE
+  TRANSACTION_SUSPECTE
+  INACTIVITE_PROLONGEE
+  MONTANT_ELEVE
+  HORS_HORAIRE
+  ECART_RAPPORT
+}
+
+enum StatutCollectrice {
+  ACTIVE
+  INACTIVE
+  SUSPENDUE
+}
+
+// ─────────────────────────────────────────────
+// TABLE : Organisations (Multi-tenant)
+// ─────────────────────────────────────────────
+
+model Organisation {
+  id          String   @id @default(cuid())
+  nom         String
+  code        String   @unique
+  telephone   String?
+  email       String?
+  adresse     String?
+  logo        String?  // URL logo
+  actif       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  utilisateurs Utilisateur[]
+  clients      Client[]
+  zones        Zone[]
+  parametres   Parametres?
+
+  @@map("organisations")
+}
+
+// ─────────────────────────────────────────────
+// TABLE : Utilisateurs (tous rôles)
+// ─────────────────────────────────────────────
+
+model Utilisateur {
+  id              String            @id @default(cuid())
+  nom             String
+  prenom          String
+  email           String            @unique
+  telephone       String?
+  motDePasse      String            // bcrypt hash
+  role            Role
+  statut          StatutCollectrice @default(ACTIVE)
+  photo           String?           // URL photo de profil
+  organisationId  String
+  superviseurId   String?           // Pour les collectrices, leur superviseur
+  zoneId          String?           // Zone géographique assignée
+  dernierLogin    DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  organisation   Organisation  @relation(fields: [organisationId], references: [id])
+  superviseur    Utilisateur?  @relation("SupervisionHierarchie", fields: [superviseurId], references: [id])
+  subalternes    Utilisateur[] @relation("SupervisionHierarchie")
+  zone           Zone?         @relation(fields: [zoneId], references: [id])
+
+  // Relations collectrice
+  transactions   Transaction[]
+  positions      PositionGPS[]
+  alertes        Alerte[]
+  rapports       Rapport[]
+  sessions       Session[]
+
+  @@map("utilisateurs")
+}
+
+// ─────────────────────────────────────────────
+// TABLE : Sessions (NextAuth)
+// ─────────────────────────────────────────────
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  utilisateurId String
+  expires      DateTime
+
+  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ─────────────────────────────────────────────
+// TABLE : Clients (épargnants)
+// ─────────────────────────────────────────────
+
+model Client {
+  id              String   @id @default(cuid())
+  nom             String
+  prenom          String
+  telephone       String
+  numeroCarte     String   @unique  // Numéro de carte client
+  adresse         String?
+  photo           String?
+  organisationId  String
+  collectriceId   String?  // Collectrice habituellement assignée
+  solde           Decimal  @default(0) @db.Decimal(15, 2)
+  actif           Boolean  @default(true)
+  dateInscription DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organisation Organisation  @relation(fields: [organisationId], references: [id])
+  transactions Transaction[]
+
+  @@map("clients")
+}
+
+// ─────────────────────────────────────────────
+// TABLE : Transactions
+// ─────────────────────────────────────────────
+
+model Transaction {
+  id              String            @id @default(cuid())
+  montant         Decimal           @db.Decimal(15, 2)
+  type            TypeTransaction   @default(DEPOT)
+  statut          StatutTransaction @default(EN_ATTENTE)
+  clientId        String
+  collectriceId   String
+  latitude        Float?            // Coordonnées GPS au moment de la transaction
+  longitude       Float?
+  adresseApprox   String?           // Adresse approximative reverse-geocodée
+  note            String?           // Note de la collectrice
+  photoRecu       String?           // URL photo du reçu (optionnel)
+  numeroRecu      String            @unique @default(cuid())
+  confirmeePar    String?           // ID de l'admin qui a confirmé
+  dateTransaction DateTime          @default(now())
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  client      Client      @relation(fields: [clientId], references: [id])
+  collectrice Utilisateur @relation(fields: [collectriceId], references: [id])
+  alertes     Alerte[]
+
+  @@map("transactions")
+}
+
+// ─────────────────────────────────────────────
+// TABLE : Positions GPS (historique temps réel)
+// ─────────────────────────────────────────────
+
+model PositionGPS {
+  id            String   @id @default(cuid())
+  collectriceId String
+  latitude      Float
+  longitude     Float
+  precision     Float?   // Précision GPS en mètres
+  vitesse       Float?   // Vitesse en km/h
+  cap           Float?   // Direction (bearing)
+  timestamp     DateTime @default(now())
+
+  collectrice Utilisateur @relation(fields: [collectriceId], references: [id])
+
+  @@index([collectriceId, timestamp])
+  @@map("positions_gps")
+}
+
+// ─────────────────────────────────────────────
+// TABLE : Zones géographiques
+// ─────────────────────────────────────────────
+
+model Zone {
+  id             String   @id @default(cuid())
+  nom            String
+  description    String?
+  organisationId String
+  // GeoJSON polygon (zone définie sur la carte)
+  polygone       Json?    // { type: "Polygon", coordinates: [...] }
+  centre         Json?    // { latitude: x, longitude: y }
+  rayon          Float?   // Rayon en km si zone circulaire
+  actif          Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organisation  Organisation  @relation(fields: [organisationId], references: [id])
+  utilisateurs  Utilisateur[]
+  alertes       Alerte[]
+
+  @@map("zones")
+}
+
+// ─────────────────────────────────────────────
+// TABLE : Alertes
+// ─────────────────────────────────────────────
+
+model Alerte {
+  id            String       @id @default(cuid())
+  type          TypeAlerte
+  niveau        NiveauAlerte @default(AVERTISSEMENT)
+  message       String
+  collectriceId String
+  transactionId String?
+  zoneId        String?
+  latitude      Float?
+  longitude     Float?
+  lue           Boolean      @default(false)
+  resolue       Boolean      @default(false)
+  resolueParId  String?
+  resolueAt     DateTime?
+  createdAt     DateTime     @default(now())
+
+  collectrice  Utilisateur  @relation(fields: [collectriceId], references: [id])
+  transaction  Transaction? @relation(fields: [transactionId], references: [id])
+  zone         Zone?        @relation(fields: [zoneId], references: [id])
+
+  @@index([collectriceId, createdAt])
+  @@map("alertes")
+}
+
+// ─────────────────────────────────────────────
+// TABLE : Rapports
+// ─────────────────────────────────────────────
+
+model Rapport {
+  id            String   @id @default(cuid())
+  titre         String
+  type          String   // "QUOTIDIEN" | "HEBDOMADAIRE" | "MENSUEL" | "PERSONNALISE"
+  dateDebut     DateTime
+  dateFin       DateTime
+  genereParId   String
+  urlPdf        String?  // Lien vers le PDF stocké
+  urlExcel      String?
+  donnees       Json     // Snapshot JSON des données du rapport
+  createdAt     DateTime @default(now())
+
+  generePar Utilisateur @relation(fields: [genereParId], references: [id])
+
+  @@map("rapports")
+}
+
+// ─────────────────────────────────────────────
+// TABLE : Paramètres organisation
+// ─────────────────────────────────────────────
+
+model Parametres {
+  id                    String  @id @default(cuid())
+  organisationId        String  @unique
+  montantMaxTransaction Decimal @default(500000) @db.Decimal(15, 2)
+  heureDebutActivite    String  @default("07:00")
+  heureFinActivite      String  @default("19:00")
+  distanceMaxZone       Float   @default(5.0)  // km
+  inactiviteSeuilMin    Int     @default(60)   // minutes sans position = alerte
+  seuilMontantEleve     Decimal @default(200000) @db.Decimal(15, 2)
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+
+  @@map("parametres")
+}

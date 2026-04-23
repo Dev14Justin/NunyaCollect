@@ -1278,21 +1278,21 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ## 17. Roadmap
 
-### Phase 1 — MVP (Semaines 1-4)
+### Phase 1 — MVP
 - [x] Authentification complète (connexion, rôles, JWT)
 - [x] Interface collectrice mobile (transactions, géoloc)
 - [x] Tableau de bord admin avec carte temps réel
 - [x] Gestion des clients
 - [x] Alertes de base
 
-### Phase 2 — Complétion (Semaines 5-7)
+### Phase 2 — Complétion
 - [ ] Rapports PDF & Excel complets
 - [ ] Système d'alertes avancé (zones, anomalies)
 - [ ] Historique d'itinéraires sur la carte
 - [ ] Notifications SMS (Africa's Talking)
 - [ ] PWA — mode hors-ligne partiel pour la collectrice
 
-### Phase 3 — Améliorations (Semaine 8+)
+### Phase 3 — Améliorations
 - [ ] Application mobile React Native (iOS & Android)
 - [ ] Portail client (consultation du solde)
 - [ ] Intelligence artificielle : prédictions de collecte
