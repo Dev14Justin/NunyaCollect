@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Shield, Lock, Mail, ArrowRight, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -11,22 +12,25 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Méthode recommandée : redirection native
+      // Utiliser redirect: false pour pouvoir gérer l'erreur en TypeScript et afficher un toast
       const result = await signIn("credentials", {
         email,
         password,
-        redirect: true,
-        callbackUrl: "/dashboard",
+        redirect: false,
       });
 
       if (result?.error) {
         toast.error("Identifiants invalides. Veuillez réessayer.");
+      } else {
+        router.push("/dashboard");
+        router.refresh();
       }
     } catch (error) {
       toast.error("Une erreur est survenue lors de la connexion.");

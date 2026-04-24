@@ -53,7 +53,7 @@ export function CollectionsChart() {
           />
           <Tooltip 
             contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-            formatter={(value: number) => [formatCurrency(value), "Collecté"]}
+            formatter={(value: any) => [formatCurrency(Number(value)), "Collecté"]}
           />
           <Area 
             type="monotone" 
@@ -101,7 +101,7 @@ export function PerformanceChart() {
           <Tooltip 
             cursor={{fill: 'transparent'}}
             contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-            formatter={(value: number) => [formatCurrency(value), "Total"]}
+            formatter={(value: any) => [formatCurrency(Number(value)), "Total"]}
           />
           <Bar dataKey="total" radius={[0, 8, 8, 0]} barSize={20}>
             {data.map((entry, index) => (

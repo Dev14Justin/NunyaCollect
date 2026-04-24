@@ -14,7 +14,6 @@ import {
 import { motion } from "framer-motion";
 import { formatCurrency } from "@/lib/utils";
 import dynamic from "next/dynamic";
-import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
 
 // Import dynamique de la carte pour éviter les erreurs SSR de Leaflet
 const CarteTempsReel = dynamic(

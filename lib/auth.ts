@@ -9,24 +9,50 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
+        console.log("Tentative de connexion pour:", credentials?.email)
+        
+        if (!credentials?.email || !credentials?.password) {
+          console.log("Email ou mot de passe manquant")
+          return null
+        }
 
-        const user = await prisma.utilisateur.findUnique({
-          where: { email: credentials.email as string },
-        })
+        try {
+          const user = await prisma.utilisateur.findUnique({
+            where: { email: credentials.email as string },
+          })
 
-        if (!user || !user.motDePasse) return null
+          if (!user) {
+            console.log("Utilisateur non trouvé dans la DB")
+            return null
+          }
 
-        const isValid = await bcrypt.compare(credentials.password as string, user.motDePasse)
+          if (!user.motDePasse) {
+            console.log("L'utilisateur n'a pas de mot de passe enregistré")
+            return null
+          }
 
-        if (!isValid) return null
+          const isValid = await bcrypt.compare(
+            credentials.password as string, 
+            user.motDePasse
+          )
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: `${user.prenom} ${user.nom}`,
-          role: user.role,
-          organisationId: user.organisationId,
+          if (!isValid) {
+            console.log("Mot de passe incorrect")
+            return null
+          }
+
+          console.log("Connexion réussie pour:", user.email)
+          
+          return {
+            id: user.id,
+            email: user.email,
+            name: `${user.prenom} ${user.nom}`,
+            role: user.role,
+            organisationId: user.organisationId,
+          }
+        } catch (error) {
+          console.error("Erreur technique lors de l'autorisation:", error)
+          return null
         }
       },
     }),

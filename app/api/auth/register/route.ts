@@ -29,6 +29,7 @@ export async function POST(req: Request) {
       organisation = await prisma.organisation.create({
         data: {
           nom: "NunyaCollect Default",
+          code: "NUNYA-DEFAULT",
           email: "system@nunyacollect.com"
         }
       })

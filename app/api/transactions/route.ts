@@ -33,7 +33,7 @@ export async function POST(req: Request) {
           montant,
           type: type as TypeTransaction,
           clientId,
-          collectriceId: session.user.id!,
+          collectriceId: (session.user as any).id,
           latitude,
           longitude,
           note,

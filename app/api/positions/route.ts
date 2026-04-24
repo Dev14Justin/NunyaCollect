@@ -5,7 +5,7 @@ import { NextResponse } from "next/server"
 export async function POST(req: Request) {
   try {
     const session = await auth()
-    if (!session?.user || session.user.role !== "COLLECTRICE") {
+    if (!session?.user || (session.user as any).role !== "COLLECTRICE") {
       return new NextResponse("Non autorisé", { status: 401 })
     }
 
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     // Enregistrer la position dans l'historique
     const position = await prisma.positionGPS.create({
       data: {
-        collectriceId: session.user.id!,
+        collectriceId: (session.user as any).id,
         latitude,
         longitude,
         precision,

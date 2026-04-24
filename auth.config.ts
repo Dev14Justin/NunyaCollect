@@ -25,8 +25,8 @@ export const authConfig = {
     },
     session({ session, token }) {
       if (session.user) {
-        (session.user as any).role = token.role
-        (session.user as any).organisationId = token.organisationId
+        (session.user as any).role = token.role as any
+        (session.user as any).organisationId = token.organisationId as any
       }
       return session
     },

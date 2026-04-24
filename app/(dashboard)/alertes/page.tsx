@@ -9,7 +9,8 @@ import {
   User, 
   CheckCircle2, 
   Loader2,
-  Bell
+  Bell,
+  ArrowUpRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
