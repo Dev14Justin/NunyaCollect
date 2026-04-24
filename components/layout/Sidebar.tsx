@@ -20,6 +20,7 @@ import { signOut } from "next-auth/react";
 
 const navigation = [
   { name: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Clients (CRM)", href: "/clients", icon: Users },
   { name: "Collectrices", href: "/collectrices", icon: Users },
   { name: "Transactions", href: "/transactions", icon: Receipt },
   { name: "Carte Live", href: "/carte", icon: MapIcon },

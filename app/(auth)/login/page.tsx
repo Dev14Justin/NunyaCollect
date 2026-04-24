@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Shield, Lock, Mail, ArrowRight, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -11,25 +11,22 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // Méthode recommandée : redirection native
       const result = await signIn("credentials", {
         email,
         password,
-        redirect: false,
+        redirect: true,
+        callbackUrl: "/dashboard",
       });
 
       if (result?.error) {
         toast.error("Identifiants invalides. Veuillez réessayer.");
-      } else {
-        toast.success("Connexion réussie !");
-        router.push("/dashboard"); // Le middleware gérera la redirection vers /accueil si c'est une collectrice
-        router.refresh();
       }
     } catch (error) {
       toast.error("Une erreur est survenue lors de la connexion.");
@@ -116,7 +113,7 @@ export default function LoginPage() {
           <div className="mt-10 pt-8 border-t border-slate-100 text-center">
             <p className="text-slate-500 text-sm">
               Vous n'avez pas de compte ?{" "}
-              <span className="text-emerald-600 font-bold">Contactez votre administrateur</span>
+              <Link href="/register" className="text-emerald-600 font-bold hover:underline">Inscrivez-vous ici</Link>
             </p>
           </div>
         </div>
