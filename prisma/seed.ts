@@ -17,6 +17,8 @@ async function main() {
     },
   })
 
+  
+
   // 2. Créer un Super Admin
   await prisma.utilisateur.upsert({
     where: { email: "admin@nunyacollect.com" },
